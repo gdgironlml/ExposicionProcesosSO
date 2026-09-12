@@ -85,7 +85,7 @@ async function solicitarCrearProceso() {
     // C) Control de Máximo 6 Procesos Activos (Contando solo los que no han finalizado)
     const procesosActivos = Object.values(procesosGlobales).filter(p => p.estado !== 'SALIENTE');
     if (procesosActivos.length >= 4) {
-        mostrarMensaje('🚫 Límite alcanzado: Ya hay 6 procesos en el sistema. Espera a que termine uno.');
+        mostrarMensaje('🚫 Límite alcanzado: hay muchos procesos en el sistema. Espera a que termine uno.');
         return;
     }
 

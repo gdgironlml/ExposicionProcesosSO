@@ -454,7 +454,7 @@ code {
     display: grid;
     grid-template-columns: 1fr;
     gap: 0;
-    flex: 0 0 32vh; /* Altura proporcional óptima para visualizar la tabla */
+    flex: 0 0 31vh; /* Altura proporcional óptima para visualizar la tabla */
     min-height: 0;
     margin-top: 0; /* Elimina espacio innecesario arriba */
 }
