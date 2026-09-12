@@ -1332,3 +1332,50 @@ document.addEventListener('DOMContentLoaded', () => {
     generarQR();
     actualizarBotonRecepcion();
 });
+
+// ============================================================================
+// CONTROL DE VISIBILIDAD Y BLOQUEO DEL QR
+// ============================================================================
+
+window.toggleVisibilidadQR = function() {
+    // Alterna la bandera en la base de datos para habilitar/deshabilitar conexión
+    if (typeof refConfig !== 'undefined' && refConfig) {
+        refConfig.child('recepcionCerrada').set(!recepcionCerrada);
+    } else {
+        // En caso de fallo de Firebase, conmuta localmente el estado visual
+        actualizarEstadoVisualQR(!recepcionCerrada);
+    }
+};
+
+function actualizarEstadoVisualQR(bloqueado) {
+    const qrWrapper = document.getElementById('qr-wrapper');
+    const qrOverlay = document.getElementById('qr-overlay');
+    const qrInstrucciones = document.getElementById('qr-instrucciones');
+
+    if (!qrWrapper || !qrOverlay) return;
+
+    if (bloqueado) {
+        // Efecto Blur + Capa de bloqueo
+        qrWrapper.style.filter = 'blur(10px) opacity(0.2)';
+        qrOverlay.style.display = 'flex';
+        if (qrInstrucciones) {
+            qrInstrucciones.innerHTML = '🔒 Acceso cerrado.<br><small style="color: var(--cyan);">(Clic para liberar acceso)</small>';
+        }
+    } else {
+        // Modo Normal
+        qrWrapper.style.filter = 'none';
+        qrOverlay.style.display = 'none';
+        if (qrInstrucciones) {
+            qrInstrucciones.innerHTML = 'Escanea el código para ingresar.<br><small style="color: var(--amber);">(Clic para ocultar/bloquear)</small>';
+        }
+    }
+}
+
+// Sincronizar la interfaz del QR cuando cambie el estado de la recepción
+if (refConfig) {
+    refConfig.child('recepcionCerrada').on('value', snapshot => {
+        recepcionCerrada = snapshot.val() === true;
+        actualizarBotonRecepcion();
+        actualizarEstadoVisualQR(recepcionCerrada);
+    });
+}
