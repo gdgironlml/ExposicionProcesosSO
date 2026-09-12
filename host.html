@@ -353,24 +353,22 @@
             </div>
         </div>
 
-        <!-- 5. PANEL DEL QR (NUEVO) -->
-        <!-- 5. PANEL DEL QR (INTERACTIVO / OCULTABLE) -->
-        <div class="panel" id="qr-panel-container" onclick="toggleVisibilidadQR()" style="align-items: center; text-align: center; cursor: pointer; position: relative; user-select: none;">
+        <!-- 5. PANEL DEL QR (OCULTABLE INDEPENDIENTE) -->
+        <div class="panel" onclick="toggleVisibilidadQR()" style="align-items: center; text-align: center; cursor: pointer; position: relative; user-select: none;">
             <h2>Simulador Cliente</h2>
             
             <div id="qr-wrapper" style="position: relative; margin-top: 10px; display: inline-block; transition: filter 0.3s ease;">
                 <div id="qr-canvas" style="background: #fff; padding: 10px; border-radius: 8px;"></div>
             </div>
 
-            <!-- Capa sobrepuesta cuando está bloqueado -->
+            <!-- Capa sobrepuesta para ocultar la imagen -->
             <div id="qr-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); border-radius: var(--radius-m); flex-direction: column; align-items: center; justify-content: center; z-index: 10; color: #fff;">
-                <span style="font-size: 32px; margin-bottom: 6px;">🔒</span>
-                <strong style="font-size: 14px; color: var(--amber);">Acceso Bloqueado</strong>
-                <span style="font-size: 11px; opacity: 0.8; margin-top: 4px;">Haz clic para mostrar el QR</span>
+                <strong style="font-size: 14px; color: var(--amber);">QR Oculto</strong>
+                <span style="font-size: 11px; opacity: 0.8; margin-top: 4px;">Clic para mostrar</span>
             </div>
 
             <p id="qr-instrucciones" style="font-size: 13.5px; color: var(--text-dim); margin-top: 15px; line-height: 1.4;">
-                Escanea el código para ingresar. <br><small style="color: var(--amber);">(Clic para ocultar/bloquear)</small>
+                Escanea el código con tu teléfono.<br><small style="color: var(--amber);">(Clic para ocultar/mostrar QR)</small>
             </p>
         </div>
     </section>
