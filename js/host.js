@@ -15,7 +15,7 @@ const TIEMPO_TICK_MS = 100;                    // Reloj del SO (fino, para fases
 const TIEMPO_ATENCION_INTERRUPCION_MS = 2500;  // Tiempo de atención de E/S
 const VIDA_TERMINADO_MS = 3000;                // Tiempo antes de borrar SALIENTE
 const TIEMPO_ADMISION_MS = 3000;               // ← NUEVO tarda 3s en pasar a LISTO
-const PROB_SOLICITUD_ES = 0.4;      // 40% de probabilidad de que el proceso pida E/S durante esta ejecución
+//const PROB_SOLICITUD_ES = 0.4;      // 40% de probabilidad de que el proceso pida E/S durante esta ejecución
 const TIEMPO_ESPERA_ES_MS = 5000;    // Cuánto dura la espera de E/S antes de volver a LISTO
 
 // Estado de la CPU
@@ -325,6 +325,19 @@ function generarQR() {
 
 document.addEventListener('DOMContentLoaded', generarQR);
 window.addEventListener('hashchange', generarQR);
+
+// Obtiene el porcentaje entero configurado en la pantalla del Host
+// Obtiene el porcentaje exacto (0 - 100) ingresado en la interfaz del Host
+function obtenerProbabilidadGlobalES() {
+    const input = document.getElementById('prob-bloqueo');
+    if (!input) return 0; // Si no encuentra el input, probabilidad 0%
+    
+    let valor = parseInt(input.value, 10);
+    if (isNaN(valor)) return 0;
+    
+    // Garantiza que esté en el rango de 0 a 100
+    return Math.max(0, Math.min(100, valor));
+}
 
 // ============================================================================
 // 5. LISTENERS DE FIREBASE
@@ -980,11 +993,13 @@ function manejarFasesCPU(ahora) {
         cpu.faseInicio = ahora;
         cpu.faseFin = ahora + FASE_EJECUCION_MS;
 
-        // Decide si este proceso, en ALGÚN punto de esta fase de ejecución,
-        // va a solicitar E/S y bloquearse voluntariamente.
-        if (Math.random() < PROB_SOLICITUD_ES) {
-            // Momento aleatorio estrictamente dentro de la ventana de ejecución
-            // (evita los extremos, para que se note visualmente el corte)
+        // --- LÓGICA CON PROBABILIDAD GLOBAL ---
+        const probPorcentaje = obtenerProbabilidadGlobalES(); // Ejemplo: 30
+        const probDecimal = probPorcentaje / 100;              // Convertido a decimal: 0.30
+
+        // Evalúa la probabilidad configurada en el Host
+        if (Math.random() < probDecimal) {
+            // Momento aleatorio dentro de la ventana de ejecución
             const margen = 300; // ms de margen para no bloquear justo al inicio/fin
             const rango = FASE_EJECUCION_MS - margen * 2;
             cpu.momentoBloqueo = cpu.faseInicio + margen + Math.random() * rango;
