@@ -300,8 +300,8 @@ function generarQR() {
     try {
         new QRCode(qrContainer, {
             text: urlActual,
-            width: 160,
-            height: 160,
+            width: 225,
+            height: 225,
             colorDark: '#000000',
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.H
