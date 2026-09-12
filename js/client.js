@@ -212,11 +212,13 @@ async function crearProceso(nombre, quantums, prioridad) {
         }
         const pid = resultado.snapshot.val();
 
+       const pcInicial = Math.floor(Math.random() * 80) + 10;
+
         const nuevoProceso = {
             pid: pid,
             nombre: nombre,
             estado: 'NUEVO',
-            pc: '0x1000',
+            pc: pcInicial, // <-- Ahora se asigna un entero aleatorio al crearse
             pcAnterior: null,
             registros: { AX: '0x0000', BX: '0x0000', CX: '0x0000', DX: '0x0000' },
             quantumsTotales: quantums,

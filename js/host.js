@@ -243,8 +243,7 @@ function renderBCPEnVivo(p) {
     }
 
     const enBusqueda = cpu.fase === 'busqueda';
-    let pcMostrado = cpu.pcEnVivo || p.pc || '10';
-    if (pcMostrado === '0x1000') pcMostrado = '10';
+    let pcMostrado = cpu.pcEnVivo !== null ? cpu.pcEnVivo : (p.pc !== undefined ? p.pc : '—');
 
     // Función rápida para limpiar los 0x0000 iniciales
     const cln = v => (v === '0x0000' || v === '0x00' || String(v).startsWith('0x')) ? 0 : v;
@@ -574,6 +573,14 @@ function procesarAdmisionNuevos() {
         if (p.estado === 'NUEVO') {
             const creadoEn = p.creadoEn || ahora;
             // El proceso permanece visiblemente en NUEVO durante TIEMPO_ADMISION_MS
+
+            if (!p.pc) {
+                p.pc = pcInicialAleatorio();
+                if (typeof refProcesos !== 'undefined') {
+                    refProcesos.child(p.pid).update({ pc: p.pc });
+                }
+            }
+
             if (ahora - creadoEn < TIEMPO_ADMISION_MS) return;
 
             if (typeof refProcesos !== 'undefined') {
@@ -634,15 +641,9 @@ function asignarCPU(pid) {
     cpu.faseFin = cpu.faseInicio + FASE_BUSQUEDA_MS;
 
     // *** RESTAURACIÓN DEL CONTEXTO ***
-    // Usa p.pc (la instrucción guardada donde se quedó). Si el proceso es
-    // nuevo (todavía no tiene PC), se le asigna una dirección inicial
-    // aleatoria — así cada proceso arranca en una zona de memoria distinta
-    // en vez de que todos empiecen siempre en 0x1000.
-    const pcActual = (p.pc === '0x1000') ? pcInicialAleatorio() : (p.pc || pcInicialAleatorio());
-    // Durante la fase de BÚSQUEDA la CPU solo sabe A DÓNDE va a buscar la
-    // siguiente instrucción (el PC). El IR y los Registros todavía NO están
-    // cargados en el procesador —siguen en el BCP— por eso se muestran en
-    // blanco: se cargarán de una sola vez cuando termine la búsqueda.
+    // Usa el PC que ya tiene asignado el proceso desde la admisión.
+    const pcActual = p.pc ? parseInt(p.pc, 10) : pcInicialAleatorio();
+    
     cpu.pcEnVivo = pcActual;
     cpu.irEnVivo = p.ir || instruccionAleatoria();
     cpu.registrosEnVivo = p.registros ? { ...p.registros } : registrosAleatorios();
@@ -650,9 +651,9 @@ function asignarCPU(pid) {
     if (typeof refProcesos !== 'undefined') {
         refProcesos.child(pid).update({
             estado: 'EJECUTANDO',
-            pc: pcActual,           // Mantiene el PC restaurado en la BD
+            pc: pcActual,
             tiempoCPU: (p.tiempoCPU || 0) + 1
-        }).catch(err => console.error(`Error al bloquear P${pid}:`, err));;
+        }).catch(err => console.error(`Error al actualizar P${pid}:`, err));
     }
 
     registrarEvento({
@@ -660,11 +661,11 @@ function asignarCPU(pid) {
         pid, nombre: p.nombre,
         estadoAnterior: 'LISTO', estadoNuevo: 'EJECUTANDO',
         pc: pcActual,
-        pcAnterior: p.pcAnterior || 'inicio',
+        pcAnterior: p.pcAnterior || pcActual,
         pcNuevo: pcActual,
         quantumsRestantes: p.quantumsRestantes,
         quantumsTotales: p.quantumsTotales,
-        mensaje: `Dispatcher: P${pid} (${p.nombre}) RESTAURA contexto en ${pcActual} → EJECUTANDO`
+        mensaje: `Dispatcher: P${pid} (${p.nombre}) CARGA en CPU con PC ${pcActual} → EJECUTANDO`
     });
 
     pulsarNucleo('running');
@@ -1137,8 +1138,8 @@ function renderBCP() {
         let textoPrio = nivelPrio === 1 ? '🔴 Alta' : (nivelPrio === 2 ? '🟡 Media' : '🟢 Baja');
         fila.querySelector('.col-prio').textContent = textoPrio;
 
-        let pcLimpio = p.pc || '10';
-        if (pcLimpio === '0x1000') pcLimpio = '10';
+        // Muestra el PC real asignado o '—' si aún no se ha generado
+        const pcLimpio = p.pc !== undefined && p.pc !== null ? p.pc : '—';
         fila.querySelector('.col-pc code').textContent = pcLimpio;
         fila.querySelector('.col-ir code').textContent = p.ir || '—';
         fila.querySelector('.col-regs code').textContent = regsTexto;
