@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel del Usuario · Control de Sistema</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<!-- Fuentes -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Estilos generales -->
+<link rel="stylesheet" href="css/styles.css">
+
+<!-- Librerías de Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/client.js"></script>
+
+<style>
+  body {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px 18px 40px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background-color: var(--bg-hero);
+    color: var(--text);
+  }
+
+  .app-header { 
+    text-align: center; 
+    margin-bottom: 20px; 
+  }
+  .app-header h1 {
+    font-family: var(--font-display);
+    font-size: 22px; 
+    margin: 0 0 8px; 
+    color: var(--text);
+  }
+  .app-header p {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-m);
+    padding: 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card h2 {
+    font-family: var(--font-display);
+    font-size: 15px; 
+    margin: 0 0 6px; 
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  label { 
+    display: block; 
+    font-size: 12.5px; 
+    color: var(--text-dim); 
+    margin-bottom: 8px; 
+    font-weight: 500; 
+  }
+
+  select {
+    width: 100%;
+    background: var(--bg-hero);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-s);
+    padding: 12px 14px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+    cursor: pointer;
+    outline: none;
+  }
+  select:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 2px rgba(72,216,198,0.15);
+  }
+
+  .btn-action {
+    width: 100%;
+    border: none;
+    border-radius: var(--radius-s);
+    padding: 14px 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.05s, opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-action:hover { opacity: 0.9; }
+  .btn-action:active { transform: scale(0.98); }
+  .btn-action:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-proc {
+    background: var(--cyan);
+    color: #06231F;
+  }
+  .btn-int {
+    background: var(--red);
+    color: white;
+  }
+
+  /* Banner de feedback */
+  .control-banner {
+    display: none;
+    font-size: 13px; 
+    text-align: center; 
+    font-weight: 500;
+    padding: 12px 14px; 
+    border-radius: var(--radius-m);
+    margin-bottom: 18px; 
+    border: 1px solid var(--cyan);
+    background: rgba(72,216,198,0.15); 
+    color: var(--cyan);
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(-5px); } 
+    to { opacity: 1; transform: translateY(0); } 
+  }
+</style>
+</head>
+<body>
+
+  <header class="app-header">
+    <h1>Panel de Interacción del Usuario</h1>
+    <p>Como usuario, tú decides cuándo abrir un programa (crear un proceso) o cuándo interactuar con el equipo (generar una interrupción). El Sistema Operativo gestionará tus peticiones en pantalla.</p>
+  </header>
+
+  <!-- Banner de respuestas / alertas -->
+  <div id="feedback-mensaje" class="control-banner"></div>
+
+  <!-- OPCIÓN 1: CREAR PROCESO -->
+  <section class="card">
+    <h2>🚀 Crear un proceso</h2>
+    <label for="select-proceso">Aplicación a ejecutar:</label>
+<select id="select-proceso" class="input-estilo">
+    <!-- Prioridad 1 (Alta): Procesos críticos o en tiempo real -->
+    <option value="Llamada de Voz (VoIP)" data-prio="1">Llamada de Voz</option>
+    <option value="Gestor de Ventanas (UI)" data-prio="1">Gestor de Interfaz (UI)</option>
+    
+    <!-- Prioridad 2 (Media): Aplicaciones normales de usuario -->
+    <option value="Navegador Web" data-prio="2" selected>Navegador Web</option>
+    <option value="Editor de Texto" data-prio="2">Editor de Texto</option>
+    <option value="Calculadora" data-prio="2">Calculadora</option>
+    
+    <!-- Prioridad 3 (Baja): Tareas de fondo o mantenimiento -->
+    <option value="Actualización en 2do plano" data-prio="3">Actualizador de SO</option>
+    <option value="Escaneo de Antivirus" data-prio="3">Escaneo Antivirus</option>
+    <option value="Copia de Seguridad" data-prio="3">Backup en la nube</option>
+</select>
+    <button class="btn-action btn-proc" onclick="solicitarCrearProceso()">
+      ▶️ Abrir Programa
+    </button>
+  </section>
+
+  <!-- OPCIÓN 2: ENVIAR INTERRUPCIÓN -->
+  <section class="card">
+    <h2>⚡ Enviar una interrupción</h2>
+    <label for="select-interrupcion">Elige el tipo y prioridad del evento de E/S o Hardware:</label>
+    <select id="select-interrupcion">
+      <option value="1">⌨️ Nivel 1 (Baja) · Entrada de Teclado / Mouse / Clic</option>
+      <option value="2">💾 Nivel 2 (Media) · Lectura de Disco / Red</option>
+      <option value="3">🛑 Nivel 3 (Alta) · Fallo de Hardware / Memoria</option>
+    </select>
+    <button class="btn-action btn-int" onclick="solicitarEnviarInterrupcion()">
+      ⚡ Generar Interrupción
+    </button>
+  </section>
+
+</body>
+</html>

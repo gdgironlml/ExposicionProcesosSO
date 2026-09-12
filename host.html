@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Capítulo 3 · Gestión de Procesos — Panel del Núcleo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Fuentes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Estilos generales -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Librerías de Firebase y código QR -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/host.js"></script>
+
+    <style>
+    html, body {
+        height: 100%;
+        overflow: hidden;
+    }
+    body {
+        display: flex;
+        flex-direction: column;
+        padding: 16px 24px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        color: var(--text);
+        background: var(--bg-hero);
+        box-sizing: border-box;
+    }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+    .top-bar h1 {
+        font-family: var(--font-display);
+        font-size: 26px; /* Aumentado para proyector */
+        font-weight: 700;
+        margin: 0 0 3px;
+        letter-spacing: -0.01em;
+    }
+    .top-bar p {
+        margin: 0;
+        color: var(--text-dim);
+        font-size: 14px; /* Aumentado */
+    }
+
+    .qr-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-m);
+        padding: 10px 16px;
+    }
+    .qr-box #qr-canvas {
+        background: #fff;
+        padding: 4px;
+        border-radius: 4px;
+        line-height: 0;
+        width: 64px;
+        height: 64px;
+    }
+    .qr-box #qr-canvas img, .qr-box #qr-canvas canvas {
+        width: 64px !important;
+        height: 64px !important;
+    }
+    .qr-box .qr-text {
+        font-size: 13px; /* Aumentado */
+        color: var(--text-dim);
+        max-width: 170px;
+        line-height: 1.3;
+    }
+    .qr-box .qr-text strong {
+        display: block;
+        color: var(--text);
+        font-family: var(--font-display);
+        font-size: 14px; /* Aumentado */
+        margin-bottom: 2px;
+    }
+
+    /* --- Barra de control del presentador --- */
+    .control-bar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 12px;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+    }
+    .ctrl-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-family: var(--font-mono);
+        font-size: 13.5px; /* Aumentado */
+        padding: 8px 14px;
+        border-radius: var(--radius-m);
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+    }
+    .ctrl-btn:hover { border-color: var(--text-dim); }
+    .ctrl-btn.active-pause {
+        border-color: var(--amber); color: var(--amber); background: rgba(227,169,63,0.08);
+    }
+    .ctrl-btn.active-block {
+        border-color: var(--red); color: var(--red); background: rgba(226,80,79,0.08);
+    }
+
+    /* --- Hero: núcleo + colas (ocupa todo el espacio restante) --- */
+    .hero {
+        display: grid;
+        grid-template-columns: 1.25fr 1fr 1fr 1fr;
+        gap: 12px;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-m);
+        padding: 12px 14px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+    .panel h2 {
+        font-family: var(--font-display);
+        font-size: 13px; /* Aumentado */
+        font-weight: 600;
+        color: var(--text-dim);
+        margin: 0 0 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        flex-shrink: 0;
+    }
+
+    /* --- Ajuste de la Rueda del CPU --- */
+    .core-wrap { align-items: center; }
+    .core-ring {
+        position: relative;
+        width: 150px; /* Tamaño del contenedor perfecto para 150x150 SVG */
+        height: 150px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-hero);
+        border: 2px solid var(--border);
+        transition: border-color 0.3s, box-shadow 0.3s;
+        flex-shrink: 0;
+        margin-bottom: 8px;
+    }
+    .core-ring.is-running {
+        border-color: var(--cyan);
+        box-shadow: 0 0 0 5px rgba(72,216,198,0.08), 0 0 18px rgba(72,216,198,0.25);
+    }
+    .core-ring.is-interrupt {
+        border-color: var(--red);
+        box-shadow: 0 0 0 5px rgba(226,80,79,0.10), 0 0 18px rgba(226,80,79,0.3);
+    }
+    .core-ring.is-paused {
+        border-color: var(--amber) !important;
+        box-shadow: 0 0 0 5px rgba(227,169,63,0.08) !important;
+    }
+    .core-ring svg.progress {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+    }
+    .core-ring .progress-fg { transition: stroke-dashoffset 0.1s linear; }
+    .core-inner { text-align: center; z-index: 1; }
+    .core-inner .pid { font-family: var(--font-display); font-size: 28px; font-weight: 700; color: var(--cyan); }
+    .core-inner .name {
+        font-size: 13px; color: var(--text-dim); margin-top: 2px;
+        max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .core-inner .fase-label { font-size: 11px; margin-top: 2px; }
+    .core-inner .idle { font-size: 13px; color: var(--text-faint); letter-spacing: 0.03em; line-height: 1.4; }
+
+    .core-meta { display: flex; gap: 14px; font-size: 12.5px; color: var(--text-dim); flex-shrink: 0; margin-bottom: 8px; }
+    .core-meta b { color: var(--text); font-weight: 600; }
+
+    @keyframes pulseRing {
+        0% { box-shadow: 0 0 0 0 currentColor; }
+        60% { box-shadow: 0 0 0 18px transparent; }
+        100% { box-shadow: 0 0 0 0 transparent; }
+    }
+    .core-ring.pulse-running, .core-ring.pulse-switch { color: rgba(72,216,198,0.45); animation: pulseRing 0.5s ease-out; }
+    .core-ring.pulse-interrupt { color: rgba(226,80,79,0.5); animation: pulseRing 0.5s ease-out; }
+    .core-ring.pulse-terminate { color: rgba(78,90,103,0.5); animation: pulseRing 0.5s ease-out; }
+
+    .bcp-vivo-wrap { flex: 1 1 auto; min-height: 0; overflow-y: auto; width: 100%; }
+    .bcp-vivo-titulo { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); margin-bottom: 4px; }
+    .bcp-vivo-row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 2px 0; gap: 6px; }
+    .bcp-vivo-row span { color: var(--text-dim); }
+    .bcp-vivo-empty { font-size: 12.5px; color: var(--text-faint); }
+
+    /* --- Colas: scroll interno --- */
+    .queue-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 2px;
+    }
+    .queue-empty { color: var(--text-faint); font-size: 12.5px; padding: 4px 0; }
+
+    .chip {
+        display: flex; align-items: center; justify-content: space-between;
+        background: var(--panel-alt); border: 1px solid var(--border-soft);
+        border-radius: var(--radius-s); padding: 7px 10px; font-size: 12.5px; flex-shrink: 0;
+    }
+    @keyframes chipIn { from { opacity: 0; transform: translateY(-4px);} to { opacity: 1; transform: translateY(0);} }
+    .chip-anim { animation: chipIn 0.25s ease-out; }
+    .chip .chip-left { display: flex; align-items: center; gap: 6px; }
+    .chip .order-index { color: var(--text-faint); font-size: 11px; width: 16px; }
+    .chip strong { font-weight: 600; color: var(--text); }
+    .chip .q-left { color: var(--text-dim); font-size: 11px; }
+    .int-chip { border-left: 3px solid var(--grey); }
+    .int-chip.nivel-3 { border-left-color: var(--red); }
+    .int-chip.nivel-2 { border-left-color: var(--orange); }
+    .int-chip.nivel-1 { border-left-color: var(--yellow); }
+    .int-chip .tipo { font-size: 11px; color: var(--text-dim); }
+    .espera-tag { font-size: 11px; color: var(--text-faint); }
+
+    /* --- Panel inferior: BCP --- */
+    .lower-grid {
+        flex-shrink: 0;
+        margin-top: 12px;
+        height: 36vh;
+        display: flex;
+    }
+    .lower-grid .panel { flex: 1; }
+
+    .bcp-table-wrap { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+
+    table.bcp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.bcp-table th {
+        text-align: left; color: var(--text-faint); font-weight: 500; font-size: 11px;
+        letter-spacing: 0.03em; padding: 0 6px 8px; border-bottom: 1px solid var(--border-soft);
+        text-transform: uppercase; position: sticky; top: 0; background: var(--panel);
+    }
+    table.bcp-table td { padding: 8px 6px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; color: var(--text); }
+    table.bcp-table tr:last-child td { border-bottom: none; }
+    table.bcp-table tr.row-terminated td { color: var(--text-faint); opacity: 0.6; }
+    .bcp-empty { text-align: center; color: var(--text-faint); padding: 20px 0; font-size: 12.5px; }
+
+    /* Animación Celeste para cuando pasa a EJECUTANDO */
+    @keyframes rowFlashCyan { 
+        0% { background-color: rgba(72,216,198,0.25); } 
+        100% { background-color: transparent; } 
+    }
+    
+    /* Animación Ámbar para cuando guarda contexto (LISTO o BLOQUEADO) */
+    @keyframes rowFlashAmber { 
+        0% { background-color: rgba(227,169,63,0.25); } 
+        100% { background-color: transparent; } 
+    }
+
+    tr.row-flash-cyan { animation: rowFlashCyan 1.1s ease-out; }
+    tr.row-flash-amber { animation: rowFlashAmber 1.1s ease-out; }
+
+    .badge { padding: 3px 9px; font-size: 0.85em; }
+</style>
+</head>
+<body>
+
+    <header style="text-align: center; padding: 0px; background: var(--bg-surface); font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid var(--border-color);">
+    Gestión e implementación de procesos
+    </header>
+
+    <!-- BARRA DE CONTROL DEL S.O. -->
+    <div class="control-bar">
+        <button class="ctrl-btn" id="btn-pausa" onclick="togglePausa()">⏸ Pausar</button>
+        <button class="ctrl-btn" id="btn-paso" onclick="ejecutarUnQuantum()" style="display: none;">⏭ Avanzar 1 Quantum</button>
+        <button class="ctrl-btn" id="btn-recepcion" onclick="toggleRecepcion()">🔒 Cerrar recepción</button>
+        <button class="ctrl-btn" id="btn-limpiar" onclick="limpiarProcesos()">🗑 Limpiar datos</button>
+    </div>
+
+    <!-- PANELES: NÚCLEO Y COLAS -->
+    <section class="hero">
+        <!-- 1. CPU -->
+        <div class="panel core-wrap">
+            <h2 style="align-self:flex-start;">Núcleo de CPU</h2>
+            <div class="core-ring" id="core-ring">
+                <!-- SVG dinámico escalado 100% al contenedor de 150px -->
+                <svg class="progress" width="100%" height="100%" viewBox="0 0 150 150">
+                    <circle cx="75" cy="75" r="66" fill="none" stroke="var(--border-soft)" stroke-width="6"></circle>
+                    <circle class="progress-fg" id="progress-fg" cx="75" cy="75" r="66" fill="none"
+                            stroke="var(--cyan)" stroke-width="6" stroke-linecap="round"
+                            stroke-dasharray="414.7" stroke-dashoffset="414.7"></circle>
+                </svg>
+                <div class="core-inner" id="core-inner"><div class="idle">CPU EN<br>IDLE</div></div>
+            </div>
+            <div class="core-meta">
+            </div>
+            <div class="bcp-vivo-wrap">
+                <div id="bcp-vivo">
+                    <div class="bcp-vivo-empty">Sin proceso cargado.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Cola de Listos -->
+        <div class="panel">
+            <h2>Cola de listos</h2>
+            <div class="queue-list" id="ready-queue">
+                <div class="queue-empty">Sin procesos en espera.</div>
+            </div>
+        </div>
+
+        <!-- 4. Cola de Interrupciones -->
+        <div class="panel">
+            <h2>Interrupciones pendientes</h2>
+            <div class="queue-list" id="interrupt-queue">
+                <div class="queue-empty">Sin interrupciones pendientes.</div>
+            </div>
+        </div>
+
+        <!-- 5. PANEL DEL QR (NUEVO) -->
+        <div class="panel" style="align-items: center; text-align: center;">
+            <h2>Simulador Cliente</h2>
+            <div id="qr-canvas" style="background: #fff; padding: 10px; border-radius: 8px; margin-top: 10px; display: inline-block;"></div>
+            <p style="font-size: 13.5px; color: var(--text-dim); margin-top: 15px; line-height: 1.4;">
+                Escanea el código con tu teléfono para crear procesos e interrupciones.
+            </p>
+        </div>
+    </section>
+
+    <!-- PANEL INFERIOR: BCP -->
+    <section class="lower-grid">
+        <div class="panel">
+            <h2>Bloques de Control de Proceso (BCP) — estado actual</h2>
+            <div class="bcp-table-wrap">
+            <table class="bcp-table">
+                <thead>
+                    <tr>
+                        <th>PID</th>
+                        <th>Nombre</th>
+                        <th>Estado</th>
+                        <th>Q. Restantes</th>
+                        <th>Prioridad</th>
+                        <th>PC</th>
+                        <th>IR</th>
+                        <th>Registros</th>
+                    </tr>
+                </thead>
+                <tbody id="bcp-body">
+                    <!-- colspan cambiado a 7 -->
+                    <tr><td colspan="7" class="bcp-empty">Aún no se han creado procesos. Escanea el QR.</td></tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
