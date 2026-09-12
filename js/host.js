@@ -295,16 +295,27 @@ function generarQR() {
     if (!qrContainer) return;
 
     qrContainer.innerHTML = '';
-    const urlActual = window.location.href;
+    
+    // 1. CORRECCIÓN DE LA URL:
+    // Reemplaza host.html por client.html si está presente, 
+    // o agrega /client.html si la URL termina en la raíz/directorio.
+    let urlCliente = window.location.href;
+    if (urlCliente.includes('host.html')) {
+        urlCliente = urlCliente.replace('host.html', 'client.html');
+    } else {
+        // Asegurar que la URL termine apuntando a client.html
+        urlCliente = urlCliente.substring(0, urlCliente.lastIndexOf('/') + 1) + 'client.html';
+    }
 
     try {
+        // 2. CORRECCIÓN DEL TAMAÑO: Reducido a 140px para que encaje perfectamente
         new QRCode(qrContainer, {
-            text: urlActual,
-            width: 235,
-            height: 235,
+            text: urlCliente,
+            width: 240,
+            height: 240,
             colorDark: '#000000',
             colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.H
+            correctLevel: QRCode.CorrectLevel.M // Nivel M para lectura rápida en celulares
         });
     } catch (error) {
         console.error('Error al generar QR:', error);
